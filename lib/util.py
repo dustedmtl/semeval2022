@@ -4,15 +4,16 @@
 
 import os
 import csv
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Optional
+import unicodedata
 import pandas as pd
 # from typing import List, Dict, Union, Iterable, Tuple
 
 
-def load_csv(path: str, delimiter: str = ',') -> Tuple[List, List]:
+def load_csv(path: str, delimiter: str = ',') -> Tuple[Optional[List], List]:
     """CSV load function from SemEval2022."""
     header = None
-    data = list()
+    data: List[str] = []
     with open(path, encoding='utf-8') as csvfile:
         reader = csv.reader(csvfile, delimiter=delimiter)
         for row in reader:
@@ -77,3 +78,12 @@ def get_counts(dataframe):
                       (df_counts['MWE'] == mwe), 'Pct correct'] = pct_correct.values[0]
 
     return df_counts
+
+
+def strip_accents(text: str) -> str:
+    """Strip accents from text string."""
+    text = unicodedata.normalize('NFD', text)
+    # textb is bytes
+    textb = text.encode('ascii', 'ignore')
+    text = textb.decode("utf-8")
+    return text
