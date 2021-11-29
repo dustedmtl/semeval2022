@@ -1,0 +1,55 @@
+matplotlib
+numpy
+nltk
+pandas
+PyYAML
+pyyaml
+tqdm
+
+# transformers, huggingface
+sentencepiece
+tokenizers
+torch
+torchvision
+datasets
+huggingface-hub
+
+# notebook stuff
+jupyter
+nbstripout
+nbqa
+jupyter_contrib_nbextensions
+
+# code quality
+typing-extensions
+mypy
+pylint
+flake8
+flake8-docstrings
+flake8-mypy
+pyproject-flake8
+#ipdb?
+
+# neural parser
+ufal.udpipe
+OpenNMT-py>=1.2.0
+diaparser
+pytorch_lightning
+torchmetrics
+
+# conllu reading
+conllu
+
+# visualization
+bertviz
+
+# database
+lmdb
+pysolr
+zstandard
+lz4
+psutil
+ply
+
+# scipy/sklearn install magic for M4
+# https://github.com/scikit-learn/scikit-learn/issues/19137

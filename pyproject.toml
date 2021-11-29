@@ -1,0 +1,29 @@
+[tool.nbqa.addopts]
+flake8 = [
+    "--max-line-length=120",
+    "--extend-ignore=E201,E202"
+]
+
+[tool.flake8]
+max-line-length = 120
+extend-ignore = "E201,E202,W605"
+
+[tool.pylint.MASTER]
+max-line-length = 120
+disable = "invalid-name,pointless-statement"
+max-locals = 20
+
+[tool.mypy]
+warn_unused_configs = true
+
+[[tool.mypy.overrides]]
+module = [
+       "lmdb",
+       "tqdm",
+       "tqdm.notebook",
+       "nltk",
+       "nltk.tokenize",
+       "pandas",
+       "tnparser.pipeline"
+]
+ignore_missing_imports = true
