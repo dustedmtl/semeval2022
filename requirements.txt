@@ -26,7 +26,6 @@ mypy
 pylint
 flake8
 flake8-docstrings
-flake8-mypy
 pyproject-flake8
 #ipdb?
 
