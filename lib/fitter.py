@@ -15,6 +15,7 @@ class ScikitModel(Protocol):
 
     def fit(self, X, y, sample_weight=None): ...
     def predict(self, X): ...
+    def predict_proba(self, X): ...
     def score(self, X, y, sample_weight=None): ...
     def set_params(self, **params): ...
 
@@ -39,7 +40,7 @@ def get_fit_results(traindata, labels: List[str], data2, labels2: List[str]) -> 
 def add_results(df: pd.DataFrame, predictions: List[str], gold: List[str]) -> pd.DataFrame:
     """Add results to dataframe."""
     newdf = df.copy()
-    newdf['Label'] = gold['Label']
+    newdf['Label'] = gold['Label']  # type: ignore
     newdf['Prediction'] = predictions
     newdf['Correct'] = newdf['Label'] == newdf['Prediction']
     # replace $ sign which messes up dataframe showing
