@@ -38,7 +38,9 @@ module = [
        "pandas",
        "sentence_transformers",
        "sklearn.linear_model",
+       "scipy.special",
        ".util",
+       ".masker",
        "tnparser.pipeline"
 ]
 ignore_missing_imports = true
