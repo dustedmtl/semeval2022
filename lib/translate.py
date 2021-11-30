@@ -9,6 +9,7 @@ import pandas as pd
 import re
 from transformers import MarianMTModel, MarianTokenizer
 from tqdm.notebook import tqdm
+from .util import strip_accents
 from .masker import get_string_diff, replace_mask_token
 
 enpt_modelname = 'Helsinki-NLP/opus-mt-en-roa'
@@ -102,29 +103,48 @@ def record_trans(df: pd.DataFrame) -> pd.DataFrame:
         bt = row['BT']
 
         m = replace_mask_token(Target, MWE, '<mask>')
-        tkall = get_string_diff(Target, m)
+        tkall, lastchar = get_string_diff(Target, m, '<mask>')
 
         candidates = [tkall]
         if '-' in tkall:
             candidates.append(tkall.replace('-', ' '))
+        else:
+            candidates.append(tkall.replace(' ', '-'))
         candidates.append(tkall.replace(' ', ''))
+        tk_ = strip_accents(tkall)
+        if tk_ != tkall:
+            existing = list(candidates)
+            for _ in existing:
+                candidates.append(strip_accents(_))
 
         hastrans = False
-        # print(candidates)
-        print(Target)
-        print(m)
-        print(tkall)
+        # print(Target)
+        # print(bt)
+        # print(m)
+        # print(tkall)
+
         for c in candidates:
-            print(c)
-            res = re.search(r'(?i)(' + c + ')', bt)
-            # print(c, res)
+            # print(c)
+            if lastchar and lastchar.isalpha():
+                regex = r"(?i).*\b%s" % c.lower()
+            else:
+                regex = r"(?i).*\b%s\b.*" % c.lower()
+            res = re.match(regex, bt)
+            if not res:
+                res = re.match(regex, strip_accents(bt))
+            # res = re.search(r"(?i)(" + c + ")", bt)
+#            if MWE == 'pé-frio':
+#            if MWE == 'círculo virtuoso':
+#                print(bt)
+#                print(c, res)
+#                print()
             if res:
                 if '-' in c:
                     pass
                 elif ' ' not in c:
                     spacect += 1
                 hastrans = True
-                continue
+                break
 
         resdf.at[index, 'Trans'] = hastrans
 

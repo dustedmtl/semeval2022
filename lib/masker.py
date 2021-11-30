@@ -133,7 +133,7 @@ def get_masked_tokens(df: pd.DataFrame, model, limit_term: Optional[str] = None)
 
         # Substitution (whole term)
         m = replace_mask_token(target, mwe, mask_token)
-        tkall = get_string_diff(target, m, mask_token)
+        tkall, _ = get_string_diff(target, m, mask_token)
 
         # Get top 5 terms
         ks = model(m, top_k=5)
@@ -257,4 +257,7 @@ def get_string_diff(string, m, mask_token):
     # print(first, second)
     firstp = first + len(s1)
     mwe = string[firstp:second]
-    return mwe
+    lastchar = None
+    if len(string) > second:
+        lastchar = string[second]
+    return mwe, lastchar
