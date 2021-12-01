@@ -38,6 +38,8 @@ module = [
        "pandas",
        "sentence_transformers",
        "sklearn.linear_model",
+       "sklearn.ensemble",
+       "sklearn.neighbors",
        "scipy.special",
        ".util",
        ".masker",
