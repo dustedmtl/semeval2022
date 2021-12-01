@@ -250,14 +250,30 @@ def get_masked_features(df: pd.DataFrame, modelname: str = "xlm-roberta-base") -
 
 def get_string_diff(string, m, mask_token):
     """Get string difference based on mask token."""
-    s1, s2 = m.split(mask_token)
-    # print(s1,s2)
-    first = string.index(s1)
-    second = string.index(s2)
-    # print(first, second)
-    firstp = first + len(s1)
-    mwe = string[firstp:second]
+    # _, s2 = m.split(mask_token)
+    # second = string.index(s2)
+
+    maskpos = m.index(mask_token)
+    maskendpos = maskpos + len(mask_token)
+
+    if maskendpos == len(m):
+        # mask at the end of the string
+        secpos = None
+        secpart = ""
+    else:
+        # the ending string
+        secpart = m[maskendpos:]
+        # this is where the ending starts in the original string
+        secpos = string.index(secpart, maskpos)
+
+    # print(m, maskendpos, len(m), secpos, secpart)
+    mwe = string[maskpos:secpos]
+#    mwe = string[maskpos:second]
+#    if _mwe != mwe:
+#        print("Couldn't get %s from: %s" % (mask_token, m))
+#    print(mwe, _mwe)
     lastchar = None
-    if len(string) > second:
-        lastchar = string[second]
+    if secpos:
+        lastchar = string[secpos]
+    # print(mwe, lastchar)
     return mwe, lastchar

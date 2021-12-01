@@ -104,6 +104,8 @@ def record_trans(df: pd.DataFrame) -> pd.DataFrame:
 
         m = replace_mask_token(Target, MWE, '<mask>')
         tkall, lastchar = get_string_diff(Target, m, '<mask>')
+        if not tkall:
+            print('No match:', MWE, Target, m)
 
         candidates = [tkall]
         if '-' in tkall:
@@ -118,10 +120,10 @@ def record_trans(df: pd.DataFrame) -> pd.DataFrame:
                 candidates.append(strip_accents(_))
 
         hastrans = False
-        # print(Target)
-        # print(bt)
-        # print(m)
-        # print(tkall)
+        # print(1, Target)
+        # print(2, bt)
+        # print(3, m)
+        # print(4, tkall)
 
         for c in candidates:
             # print(c)
