@@ -1,11 +1,12 @@
 """Fit data."""
 
-# pylint: disable=invalid-name, line-too-long
+# pylint: disable=invalid-name, line-too-long, unused-variable
 
 # from typing import List, Tuple, Dict
 from typing import List, Tuple, Optional, Protocol
 import numpy as np
 import pandas as pd
+from collections import Counter
 from itertools import product
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
@@ -177,7 +178,7 @@ def get_trainable(df: pd.DataFrame) -> pd.DataFrame:
 def check_feats(train_data: pd.DataFrame, train_labels: List[str],
                 dev_data: pd.DataFrame, dev_labels: List[str],
                 method: Optional[str] = None,
-                maxx=None):
+                minfeats: int = 0):
     """Check performance with each of the features."""
     cols = ['Label', 'Feats']
     cols.extend(train_data.columns)
@@ -188,12 +189,12 @@ def check_feats(train_data: pd.DataFrame, train_labels: List[str],
         resdf[_] = resdf[_].astype(bool)
 
     perms = list(product([True, False], repeat=len(train_data.columns)))
-    count = 0
+    perms2 = []
+    for p in perms:
+        if any(p) and np.sum(p) > minfeats:
+            perms2.append(p)
 
-    for p in tqdm(perms):
-        count += 1
-        if maxx and count > maxx:
-            break
+    for p in tqdm(perms2):
         if any(p):
             nu_train = train_data.copy()
             nu_dev = dev_data.copy()
@@ -209,23 +210,68 @@ def check_feats(train_data: pd.DataFrame, train_labels: List[str],
                 else:
                     nu_train = nu_train.drop(col, axis=1)
                     nu_dev = nu_dev.drop(col, axis=1)
-            # print(nu_train.columns)
             score, _probs, _results = get_fit_results(nu_train, train_labels, nu_dev, dev_labels, method)
-            # classifier = get_fit(nu_train, train_labels, method)
-            # score = classifier.score(nu_dev, dev_labels)
-            res['Label'] = ', '.join(rescols)
-            res['Feats'] = feats
-            res['Score'] = score
+            res['Label'] = ', '.join(rescols)  # type: ignore
+            res['Feats'] = feats  # type: ignore
+            res['Score'] = score  # type: ignore
             resdf = resdf.append(res, ignore_index=True)
-            # res['Label'] = lbl
 
     return resdf
 
 
+def get_best_features(df: pd.DataFrame, minfeats: int = 4, topn: int = 10) -> List[List[str]]:
+    """Get best features from the featuresclassifiers."""
+    minfeats = df[df['Feats'] >= minfeats]
+    reslist = []
+    topn = minfeats.sort_values(by=['Score'], ascending=False)[:topn]  # type: ignore
+    for _, row in topn.iterrows():  # type: ignore
+        drop = []
+        for col in topn.columns[2:-1]:  # type: ignore
+            val = row[col]
+            if not val:
+                drop.append(col)
+        # print(row['Label'], drop)
+        reslist.append(drop)
+    return reslist
+
+
+def get_bestest_features(feats: List[List[str]],
+                         traindf, testdf, testlabels,
+                         embedresults, embedprobs,
+                         method: Optional[str] = None) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """Get best features from the feature lassifiers."""
+    lastbest = 0.0
+    bestscore = 0.0
+    bestest = Counter()  # type: ignore
+    bestresult = None
+
+    for cols in tqdm(feats):
+        zdf_tcf = get_trainable(traindf).drop(cols, axis=1)
+        ddf_tcf = get_trainable(testdf).drop(cols, axis=1)
+        _ddf_tcf_feat_score, ddf_tcf_feat_probs, ddf_tcf_feat_results = \
+            get_fit_results(zdf_tcf, traindf['Label'], ddf_tcf, testlabels['Label'], method)
+        mu_tcf = multi_results(testdf, testlabels, embedresults, embedprobs,
+                               ddf_tcf_feat_results, ddf_tcf_feat_probs,
+                               ['Caps', 'Hassub'])
+        co_tcf = len(mu_tcf[mu_tcf['Prediction'] == mu_tcf['Label']])
+        tcf_score = co_tcf/len(mu_tcf)
+
+        if tcf_score > bestscore:
+            lastbest = bestscore
+            bestscore = tcf_score
+            bestresult = mu_tcf
+            print("%s: %f BEST" % (', '.join(cols), tcf_score))
+        elif tcf_score > bestscore - 0.001:
+            print("%s: %f / %f" % (', '.join(cols), tcf_score, bestscore - tcf_score))
+        bestest[', '.join(cols)] = tcf_score  # type: ignore
+    return bestresult, pd.DataFrame.from_records(list(dict(bestest).items()), columns=['Columns', 'Score'])
+
+
 def multi_results(df: pd.DataFrame, gold: List[str],
-                  labels1: List[str], scores1: List[str],
-                  labels2: List[str], scores2: List[str],
-                  lit_features: List[str] = None, idiom_features: List[str] = None) -> pd.DataFrame:
+                  labels1: List[str], scores1: List[float],
+                  labels2: List[str], scores2: List[float],
+                  lit_features: List[str] = None,
+                  idiom_features: List[str] = None) -> pd.DataFrame:
     """Get combined results from classifiers."""
     newdf = df.copy()
     newdf['Label'] = gold['Label']  # type: ignore
