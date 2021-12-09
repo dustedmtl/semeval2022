@@ -252,7 +252,7 @@ def get_bestest_features(feats: List[List[str]],
             get_fit_results(zdf_tcf, traindf['Label'], ddf_tcf, testlabels['Label'], method)
         mu_tcf = multi_results(testdf, testlabels, embedresults, embedprobs,
                                ddf_tcf_feat_results, ddf_tcf_feat_probs,
-                               ['Caps', 'Hassub'])
+                               ['Caps', 'Hassub'], ['!Trans', 'Quotes'])
         co_tcf = len(mu_tcf[mu_tcf['Prediction'] == mu_tcf['Label']])
         tcf_score = co_tcf/len(mu_tcf)
 
@@ -267,14 +267,15 @@ def get_bestest_features(feats: List[List[str]],
     return bestresult, pd.DataFrame.from_records(list(dict(bestest).items()), columns=['Columns', 'Score'])
 
 
-def multi_results(df: pd.DataFrame, gold: List[str],
+def multi_results(df: pd.DataFrame, gold: Optional[List[str]],
                   labels1: List[str], scores1: List[float],
                   labels2: List[str], scores2: List[float],
                   lit_features: List[str] = None,
                   idiom_features: List[str] = None) -> pd.DataFrame:
     """Get combined results from classifiers."""
     newdf = df.copy()
-    newdf['Label'] = gold['Label']  # type: ignore
+    if gold is not None:
+        newdf['Label'] = gold['Label']  # type: ignore
     newdf['Pred1'] = labels1
     newdf['Pred2'] = labels2
     newdf['Score1'] = scores1
@@ -285,8 +286,19 @@ def multi_results(df: pd.DataFrame, gold: List[str],
     # If the predictions agree, let's just use one
     newdf.loc[agree, 'Prediction'] = newdf['Pred1']
     # Disagreements
-    newdf['Score1'] = newdf['Score1']
-    use_pred1 = newdf['Score1'] > newdf['Score2']
+    trans_score1 = newdf['Trans'] & (newdf['Pred1'] == '1') & (newdf['Pred2'] == '0')
+    trans_score2 = newdf['Trans'] & (newdf['Pred1'] == '0') & (newdf['Pred2'] == '1')
+    score1_adj = [0] * len(newdf)
+    score2_adj = [0] * len(newdf)
+    for idx, val in enumerate(trans_score1):
+        if val:
+            score1_adj[idx] = 0.05
+
+    for idx, val in enumerate(trans_score2):
+        if val:
+            score2_adj[idx] = 0.05
+
+    use_pred1 = newdf['Score1'] + score1_adj > newdf['Score2'] + score2_adj
     use_pred2 = ~use_pred1
     # print(np.sum(use_pred1), np.sum(use_pred2))
     disagree1 = ~agree & use_pred1
@@ -295,15 +307,28 @@ def multi_results(df: pd.DataFrame, gold: List[str],
     newdf.loc[disagree1, 'Prediction'] = newdf['Pred1']
     newdf.loc[disagree2, 'Prediction'] = newdf['Pred2']
 
-    if lit_features:
-        for f in lit_features:
-            f_mask = newdf[f]
-            newdf.loc[f_mask, 'Prediction'] = '1'
+    # Set to literal if there is disagreement and Trans is true
+    # trans_ex = ~agree & newdf['Trans']
+    # newdf.loc[trans_ex, 'Prediction'] = '1'
+
+    # sub_not_trans = newdf['Hassub'] & (newdf['Trans'] == False)
 
     if idiom_features:
         for f in idiom_features:
-            f_mask = newdf[f]
-            newdf.loc[f_mask, 'Prediction'] = '0'
+            if f.startswith('!'):
+                f = f[1:]
+                id_mask = newdf[f] == False
+            else:
+                id_mask = newdf[f]
+            newdf.loc[id_mask, 'Prediction'] = '0'
+
+    # print(np.sum(sub_not_trans))
+    if lit_features:
+        lit_mask = [False] * len(newdf)
+        for f in lit_features:
+            lit_mask = lit_mask | newdf[f]
+#        newdf.loc[lit_mask & ~sub_not_trans, 'Prediction'] = '1'
+        newdf.loc[lit_mask, 'Prediction'] = '1'
 
     # replace $ sign which messes up dataframe showing
     xy = newdf[['Previous', 'Target', 'Next']].replace({'\$': '$\$$'}, regex=True)
