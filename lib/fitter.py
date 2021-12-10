@@ -335,3 +335,49 @@ def multi_results(df: pd.DataFrame, gold: Optional[List[str]],
     newdf[['Previous', 'Target', 'Next']] = xy
 
     return newdf
+
+
+def check_diffs(dfs: List[pd.DataFrame]) -> pd.DataFrame:
+    """Return a dataframe where the result differ in result dataframes."""
+    of = dfs[1:]
+    cols = dfs[0].rename(columns={'Label': 'Label1'}).columns
+    ct = 2
+    for frame in of:
+        nucol = 'Label'+str(ct)
+        f2 = frame.rename(columns={'Label': nucol})
+        ocols = f2.columns.drop(['ID', 'Language', 'Setting'])
+        cols = cols.append(ocols)
+        ct += 1
+    print(cols)
+    resdf = pd.DataFrame(columns=cols)
+    for idx, row in dfs[0].iterrows():
+        labels = [row['Label']]
+        for other in of:
+            labels.append(other.loc[idx, 'Label'])
+        if len(set(labels)) == 1:
+            pass
+        else:
+            addrow = [row['ID'], row['Language'], row['Setting']]
+            for lbl in labels:
+                addrow.append(lbl)
+            # print(addrow)
+            # print(resdf)
+            resdf.loc[idx, :] = addrow
+            # print(idx)
+
+    return resdf
+
+
+def get_diff_df(diffs: pd.DataFrame, frames: List[pd.DataFrame]) -> pd.DataFrame:
+    """Get best result based on dataframes."""
+    resdf = frames[0]
+    for idx, row in diffs.iterrows():
+        numlabels = len(frames)
+        labels = []
+        for frame in frames:
+            labels.append(frame.loc[idx, 'Label'])
+        sum_1 = np.sum([int(_) for _ in labels])
+        gotlabel = '1' if sum_1 > numlabels / 2 else 0
+        # print(labels, sum_1, gotlabel)
+        resdf.loc[idx, 'Label'] = gotlabel
+    return resdf
