@@ -11,6 +11,7 @@ from itertools import product
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import f1_score
 from tqdm.notebook import tqdm
 
 
@@ -43,11 +44,13 @@ def get_fit_results(traindata, labels: List[str],
                     method: Optional[str] = None) -> Tuple[float, List[float], List[str]]:
     """Get predictions with Logistic Regression."""
     fitter = get_fit(traindata, labels, method)
+    results = fitter.predict(data2)
     if labels2 is not None:
-        score = fitter.score(data2, labels2)
+        f1s = f1_score(results, labels2, average='macro')
+        # score = fitter.score(data2, labels2)
+        score = f1s
     else:
         score = 0
-    results = fitter.predict(data2)
     probs = fitter.predict_proba(data2)
     maxprobs = np.max(probs, axis=1)
     return score, maxprobs, results
