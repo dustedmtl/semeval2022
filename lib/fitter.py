@@ -166,13 +166,16 @@ def get_trainable(df: pd.DataFrame) -> pd.DataFrame:
             res.drop(col, axis=1, inplace=True)
         else:
             # print(idx, col, dt)
-            if dt == 'float64':
+            if dt in ['float64', 'int64']:
                 pass
             elif dt == 'bool':
                 res[col] = res[col].astype(int)
                 # print(idx, col, dt)
             else:
                 res.drop(col, axis=1, inplace=True)
+
+    if 'Label' in res.columns:
+        res.drop('Label', axis=1, inplace=True)
 
     res.reset_index()
     return res
@@ -274,7 +277,8 @@ def multi_results(df: pd.DataFrame, gold: Optional[List[str]],
                   labels1: List[str], scores1: List[float],
                   labels2: List[str], scores2: List[float],
                   lit_features: List[str] = None,
-                  idiom_features: List[str] = None) -> pd.DataFrame:
+                  idiom_features: List[str] = None,
+                  firstlimit: int = 0) -> pd.DataFrame:
     """Get combined results from classifiers."""
     newdf = df.copy()
     if gold is not None:
@@ -293,6 +297,7 @@ def multi_results(df: pd.DataFrame, gold: Optional[List[str]],
     trans_score2 = newdf['Trans'] & (newdf['Pred1'] == '0') & (newdf['Pred2'] == '1')
     score1_adj = [0] * len(newdf)
     score2_adj = [0] * len(newdf)
+    # Adjust score by 0.05 if Trans is True
     for idx, val in enumerate(trans_score1):
         if val:
             score1_adj[idx] = 0.05
@@ -301,8 +306,13 @@ def multi_results(df: pd.DataFrame, gold: Optional[List[str]],
         if val:
             score2_adj[idx] = 0.05
 
-    use_pred1 = newdf['Score1'] + score1_adj > newdf['Score2'] + score2_adj
-    use_pred2 = ~use_pred1
+    if firstlimit:
+        use_pred1 = newdf['Score1'] > firstlimit
+        use_pred2 = ~use_pred1
+    else:
+        use_pred1 = newdf['Score1'] + score1_adj > newdf['Score2'] + score2_adj
+        use_pred2 = ~use_pred1
+
     # print(np.sum(use_pred1), np.sum(use_pred2))
     disagree1 = ~agree & use_pred1
     disagree2 = ~agree & use_pred2
