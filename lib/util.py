@@ -7,7 +7,7 @@ import csv
 from typing import List, Tuple, Dict, Optional
 import unicodedata
 import pandas as pd
-# from typing import List, Dict, Union, Iterable, Tuple
+from datetime import datetime
 
 
 def load_csv(path: str, delimiter: str = ',') -> Tuple[Optional[List], List]:
@@ -87,3 +87,13 @@ def strip_accents(text: str) -> str:
     textb = text.encode('ascii', 'ignore')
     text = textb.decode("utf-8")
     return text
+
+
+def save_pickle(df: pd.DataFrame, basename: str, ext: int = 1):
+    """Save dataframe to disk, append date."""
+    currdate = datetime.now()
+    datestr = currdate.strftime("%Y%m%d")
+    fmt = "%s_%s_%d.pkl"
+    filename = fmt % (basename, datestr, ext)
+    df.to_pickle(filename)
+    print('Saved dataframe to', filename)
