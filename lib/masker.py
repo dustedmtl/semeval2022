@@ -145,7 +145,11 @@ def get_masked_tokens(df: pd.DataFrame, model, limit_term: Optional[str] = None)
         # Go through the top terms
         # Strings shorter than 3 characters are ignored
         # So are non-words
-        for d in ks:
+
+        found_term_index = None
+        found_term_score = None
+
+        for d_idx, d in enumerate(ks):
             term = d['token_str']
             terms.append(term)
             if len(term) < 3:
@@ -157,11 +161,22 @@ def get_masked_tokens(df: pd.DataFrame, model, limit_term: Optional[str] = None)
                 # Result term must match the MWE part exactly
                 regex = r"(?i).*\b%s\b.*" % term.lower()
                 # print(mwe,regex,term)
+                gotit = False
                 if re.match(regex, mwe):
-                    has_component = True
+                    gotit = True
                 elif re.match(regex, tkall):
                     # print('Got', term, 'in found:', tkall)
+                    gotit = True
+                if gotit:
                     has_component = True
+                    if not found_term_index:
+                        found_term_index = d_idx + 1
+                    if not found_term_score:
+                        found_term_score = d['score']
+
+        if not found_term_index:
+            found_term_index = 10
+            found_term_score = -1
 
         top_score = ks[0]['score']
         # print(target, terms, top_score)
@@ -170,6 +185,9 @@ def get_masked_tokens(df: pd.DataFrame, model, limit_term: Optional[str] = None)
         res.at[idx, 'Top score'] = top_score
         res.at[idx, 'Hassub'] = has_component
         res.at[idx, 'Short'] = shorts
+
+        res.at[idx, 'FoundIdx'] = found_term_index
+        res.at[idx, 'FoundScore'] = found_term_score
 
         if '-' in mwe:
             parts = mwe.split('-')
