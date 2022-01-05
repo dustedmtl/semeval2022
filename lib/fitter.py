@@ -29,7 +29,7 @@ class ScikitModel(Protocol):
 def get_fit(data, labels: List[str], method: str = None) -> ScikitModel:
     """Get fitting with Logistic Regression or other method."""
     if not method:
-        classifier = LogisticRegression()
+        classifier = LogisticRegression(solver='lbfgs', max_iter=200)
     elif method == "rf":
         classifier = RandomForestClassifier()
     elif method == "knn":
@@ -184,7 +184,8 @@ def get_trainable(df: pd.DataFrame) -> pd.DataFrame:
 def check_feats(train_data: pd.DataFrame, train_labels: List[str],
                 dev_data: pd.DataFrame, dev_labels: List[str],
                 method: Optional[str] = None,
-                minfeats: int = 0):
+                minfeats: int = 1,
+                maxfeats: int = 100):
     """Check performance with each of the features."""
     cols = ['Label', 'Feats']
     cols.extend(train_data.columns)
@@ -197,7 +198,7 @@ def check_feats(train_data: pd.DataFrame, train_labels: List[str],
     perms = list(product([True, False], repeat=len(train_data.columns)))
     perms2 = []
     for p in perms:
-        if any(p) and np.sum(p) > minfeats:
+        if any(p) and np.sum(p) >= minfeats and np.sum(p) <= maxfeats:
             perms2.append(p)
 
     for p in tqdm(perms2):
@@ -244,7 +245,8 @@ def get_best_features(df: pd.DataFrame, minfeats: int = 4, topn: int = 10) -> Li
 def get_bestest_features(feats: List[List[str]],
                          traindf, testdf, testlabels,
                          embedresults, embedprobs,
-                         method: Optional[str] = None) -> Tuple[pd.DataFrame, pd.DataFrame]:
+                         method: Optional[str] = None,
+                         autodrop: Optional[List[str]] = None) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Get best features from the feature lassifiers."""
     lastbest = 0.0
     bestscore = 0.0
@@ -252,13 +254,16 @@ def get_bestest_features(feats: List[List[str]],
     bestresult = None
 
     for cols in tqdm(feats):
+        if autodrop:
+            cols.extend(autodrop)
         zdf_tcf = get_trainable(traindf).drop(cols, axis=1)
         ddf_tcf = get_trainable(testdf).drop(cols, axis=1)
         _ddf_tcf_feat_score, ddf_tcf_feat_probs, ddf_tcf_feat_results = \
             get_fit_results(zdf_tcf, traindf['Label'], ddf_tcf, testlabels['Label'], method)
         mu_tcf = multi_results(testdf, testlabels, embedresults, embedprobs,
                                ddf_tcf_feat_results, ddf_tcf_feat_probs,
-                               ['Caps', 'Hassub'], ['!Trans', 'Quotes'])
+                               ['Caps', 'Hassub'], ['Quotes'])
+#                               ['Caps', 'Hassub'], ['!Trans', 'Quotes'])
         co_tcf = len(mu_tcf[mu_tcf['Prediction'] == mu_tcf['Label']])
         tcf_score = co_tcf/len(mu_tcf)
 
@@ -278,7 +283,7 @@ def multi_results(df: pd.DataFrame, gold: Optional[List[str]],
                   labels2: List[str], scores2: List[float],
                   lit_features: List[str] = None,
                   idiom_features: List[str] = None,
-                  firstlimit: int = 0) -> pd.DataFrame:
+                  agreeonly: bool = False) -> pd.DataFrame:
     """Get combined results from classifiers."""
     newdf = df.copy()
     if gold is not None:
@@ -289,7 +294,6 @@ def multi_results(df: pd.DataFrame, gold: Optional[List[str]],
     newdf['Score2'] = scores2
 
     agree = labels1 == labels2
-    # print(np.sum(agree))
     # If the predictions agree, let's just use one
     newdf.loc[agree, 'Prediction'] = newdf['Pred1']
     # Disagreements
@@ -306,12 +310,8 @@ def multi_results(df: pd.DataFrame, gold: Optional[List[str]],
         if val:
             score2_adj[idx] = 0.05
 
-    if firstlimit:
-        use_pred1 = newdf['Score1'] > firstlimit
-        use_pred2 = ~use_pred1
-    else:
-        use_pred1 = newdf['Score1'] + score1_adj > newdf['Score2'] + score2_adj
-        use_pred2 = ~use_pred1
+    use_pred1 = newdf['Score1'] + score1_adj > newdf['Score2'] + score2_adj
+    use_pred2 = ~use_pred1
 
     # print(np.sum(use_pred1), np.sum(use_pred2))
     disagree1 = ~agree & use_pred1
@@ -333,15 +333,24 @@ def multi_results(df: pd.DataFrame, gold: Optional[List[str]],
                 id_mask = newdf[f] == False
             else:
                 id_mask = newdf[f]
-            newdf.loc[id_mask, 'Prediction'] = '0'
+            if agreeonly:
+                newdf.loc[id_mask & ~agree, 'Prediction'] = '0'
+                newdf.loc[id_mask & ~agree, 'Prediction'+f] = '0'
+            else:
+                newdf.loc[id_mask, 'Prediction'] = '0'
+                newdf.loc[id_mask, 'Prediction'+f] = '0'
 
     # print(np.sum(sub_not_trans))
     if lit_features:
         lit_mask = [False] * len(newdf)
         for f in lit_features:
-            lit_mask = lit_mask | newdf[f]
-#        newdf.loc[lit_mask & ~sub_not_trans, 'Prediction'] = '1'
-        newdf.loc[lit_mask, 'Prediction'] = '1'
+            lit_mask = newdf[f]
+            if agreeonly:
+                newdf.loc[lit_mask & ~agree, 'Prediction'] = '1'
+                newdf.loc[lit_mask & ~agree, 'Prediction'+f] = '1'
+            else:
+                newdf.loc[lit_mask, 'Prediction'] = '1'
+                newdf.loc[lit_mask, 'Prediction'+f] = '1'
 
     # replace $ sign which messes up dataframe showing
     xy = newdf[['Previous', 'Target', 'Next']].replace({'\$': '$\$$'}, regex=True)
