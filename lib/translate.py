@@ -5,8 +5,9 @@
 # from typing import List
 # from typing import List, Tuple, Dict
 # import numpy as np
-import pandas as pd
 import re
+import numpy as np
+import pandas as pd
 from transformers import MarianMTModel, MarianTokenizer
 from tqdm.notebook import tqdm
 from .util import strip_accents
@@ -34,6 +35,7 @@ def backtranslate(df: pd.DataFrame, model1, model2, tokenizer1, tokenizer2, batc
 
     en_index = df['Language'] == 'EN'
     pt_index = df['Language'] == 'PT'
+    rest_index = np.invert(en_index | pt_index)
 
     en_sentences = list(df[en_index]['Target'].values)
     # en_mwes = list(df[en_index]['MWE'].values)
@@ -41,8 +43,8 @@ def backtranslate(df: pd.DataFrame, model1, model2, tokenizer1, tokenizer2, batc
     pt_sentences = list(df[pt_index]['Target'].values)
     # pt_mwes = list(df[pt_index]['MWE'].values)
 
-    # FIXME: currently hard-coded to en/pt
-    # FIXME: glg sentences?
+    rest_sentences = list(df[rest_index]['Target'].values)
+
     en_pt_sentences = []
     en_pt_en_sentences = []
 
@@ -86,6 +88,30 @@ def backtranslate(df: pd.DataFrame, model1, model2, tokenizer1, tokenizer2, batc
     for idx, sent in zip(df[pt_index].index, pt_en_pt_sentences):
         # print(idx, sent)
         resdf.at[idx, 'BT'] = sent
+
+    if len(rest_sentences) > 0:
+        gl_en_sentences = []
+        gl_en_gl_sentences = []
+
+        for i in tqdm(range((len(rest_sentences)-1)//batch_len+1)):
+            slc = rest_sentences[i*batch_len:(i+1)*batch_len]
+            # print(len(slc), i*batch_len, (i+1)*batch_len)
+            gl_trans1 = model2.generate(**tokenizer2(slc, return_tensors="pt", padding=True))
+            gl_trg_text = [tokenizer2.decode(t, skip_special_tokens=True) for t in gl_trans1]
+            # print(slc)
+            # print(gl_trg_text)
+            gl_en_sentences.extend(gl_trg_text)
+            trg = ['>>glg<< ' + t for t in gl_trg_text]
+            gl_trans2 = model1.generate(**tokenizer1(trg, return_tensors="pt", padding=True))
+            gl_back_text = [tokenizer1.decode(t, skip_special_tokens=True) for t in gl_trans2]
+            # print(pt_back_text)
+            gl_en_gl_sentences.extend(gl_back_text)
+            # break
+
+            for idx, sent in zip(df[rest_index].index, gl_en_gl_sentences):
+                # print(idx, sent)
+                resdf.at[idx, 'BT'] = sent
+
 
     return resdf
 
