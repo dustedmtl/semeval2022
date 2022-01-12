@@ -24,9 +24,9 @@ def load_csv(path: str, delimiter: str = ',') -> Tuple[Optional[List], List]:
     return header, data
 
 
-def load_df(path: str) -> pd.DataFrame:
+def load_df(path: str, delimiter: str = ',') -> pd.DataFrame:
     """Return Dataframe from CSV load."""
-    header, data = load_csv(path)
+    header, data = load_csv(path, delimiter=delimiter)
     df = pd.DataFrame(data, columns=header)
     return df
 
