@@ -48,6 +48,8 @@ def backtranslate(df: pd.DataFrame, model1, model2, tokenizer1, tokenizer2, batc
     en_pt_sentences = []
     en_pt_en_sentences = []
 
+    print('Backtranslating English sentences')
+
     for i in tqdm(range((len(en_sentences)-1)//batch_len+1)):
         slc = en_sentences[i*batch_len:(i+1)*batch_len]
         # print(len(slc), i*batch_len, (i+1)*batch_len)
@@ -69,6 +71,8 @@ def backtranslate(df: pd.DataFrame, model1, model2, tokenizer1, tokenizer2, batc
 
     pt_en_sentences = []
     pt_en_pt_sentences = []
+
+    print('Backtranslating Portuguese sentences')
 
     for i in tqdm(range((len(pt_sentences)-1)//batch_len+1)):
         slc = pt_sentences[i*batch_len:(i+1)*batch_len]
@@ -93,6 +97,8 @@ def backtranslate(df: pd.DataFrame, model1, model2, tokenizer1, tokenizer2, batc
         gl_en_sentences = []
         gl_en_gl_sentences = []
 
+        print('Backtranslating the rest of the sentences')
+
         for i in tqdm(range((len(rest_sentences)-1)//batch_len+1)):
             slc = rest_sentences[i*batch_len:(i+1)*batch_len]
             # print(len(slc), i*batch_len, (i+1)*batch_len)
@@ -111,7 +117,6 @@ def backtranslate(df: pd.DataFrame, model1, model2, tokenizer1, tokenizer2, batc
             for idx, sent in zip(df[rest_index].index, gl_en_gl_sentences):
                 # print(idx, sent)
                 resdf.at[idx, 'BT'] = sent
-
 
     return resdf
 
