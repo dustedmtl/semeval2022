@@ -268,7 +268,7 @@ def get_bestest_features(feats: List[List[str]],
         tcf_score = co_tcf/len(mu_tcf)
 
         if tcf_score > bestscore:
-            lastbest = bestscore
+            lastbest = bestscore  # noqa: F841
             bestscore = tcf_score
             bestresult = mu_tcf
             print("%s: %f BEST" % (', '.join(cols), tcf_score))
@@ -330,15 +330,15 @@ def multi_results(df: pd.DataFrame, gold: Optional[List[str]],
         for f in idiom_features:
             if f.startswith('!'):
                 f = f[1:]
-                id_mask = newdf[f] == False
+                id_mask = newdf[f] == False  # noqa: E712
             else:
                 id_mask = newdf[f]
             if agreeonly:
                 newdf.loc[id_mask & ~agree, 'Prediction'] = '0'
-                newdf.loc[id_mask & ~agree, 'Prediction'+f] = '0'
+#                newdf.loc[id_mask & ~agree, 'Prediction'+f] = '0'
             else:
                 newdf.loc[id_mask, 'Prediction'] = '0'
-                newdf.loc[id_mask, 'Prediction'+f] = '0'
+#                newdf.loc[id_mask, 'Prediction'+f] = '0'
 
     # print(np.sum(sub_not_trans))
     if lit_features:
@@ -347,10 +347,10 @@ def multi_results(df: pd.DataFrame, gold: Optional[List[str]],
             lit_mask = newdf[f]
             if agreeonly:
                 newdf.loc[lit_mask & ~agree, 'Prediction'] = '1'
-                newdf.loc[lit_mask & ~agree, 'Prediction'+f] = '1'
+#                newdf.loc[lit_mask & ~agree, 'Prediction'+f] = '1'
             else:
                 newdf.loc[lit_mask, 'Prediction'] = '1'
-                newdf.loc[lit_mask, 'Prediction'+f] = '1'
+#                newdf.loc[lit_mask, 'Prediction'+f] = '1'
 
     # replace $ sign which messes up dataframe showing
     xy = newdf[['Previous', 'Target', 'Next']].replace({'\$': '$\$$'}, regex=True)
