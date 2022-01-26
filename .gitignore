@@ -9,6 +9,11 @@ SemEval_2022_Task2-idiomaticity
 # huggingface directories to ignore
 xlm-sentiment
 
+# Data
+data
+models
+paper
+
 # Jupyter
 jupyter.*.out
 .ipynb_checkpoints
