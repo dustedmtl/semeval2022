@@ -6,8 +6,9 @@ import os
 import csv
 from typing import List, Tuple, Dict, Optional
 import unicodedata
-import pandas as pd
 from datetime import datetime
+import pandas as pd
+import matplotlib as plt
 
 
 def load_csv(path: str, delimiter: str = ',') -> Tuple[Optional[List], List]:
@@ -91,9 +92,24 @@ def strip_accents(text: str) -> str:
 
 def save_pickle(df: pd.DataFrame, basename: str, ext: int = 1):
     """Save dataframe to disk, append date."""
-    currdate = datetime.now()
-    datestr = currdate.strftime("%Y%m%d")
+    datestr = get_datestr()
     fmt = "%s_%s_%d.pkl"
     filename = fmt % (basename, datestr, ext)
     df.to_pickle(filename)
     print('Saved dataframe to', filename)
+
+
+def get_datestr():
+    """Get current date string."""
+    currdate = datetime.now()
+    datestr = currdate.strftime("%Y%m%d")
+    return datestr
+
+
+def save_picture(pic: plt.figure, name: str, path: str='paper/figures', imgfmt='png', ext=1):
+    """Save dataframe to disk, append date."""
+    datestr = get_datestr()
+    fmt = "%s/%s_%s_%d.%s"
+    filename = fmt % (path, name, datestr, ext, imgfmt)
+    print(filename)
+    pic.savefig(filename, bbox_inches='tight')
