@@ -1,9 +1,6 @@
-matplotlib
 numpy
 nltk
 pandas
-PyYAML
-pyyaml
 tqdm
 
 # transformers, huggingface
@@ -13,6 +10,7 @@ torch
 torchvision
 datasets
 huggingface-hub
+sentence-transformers
 
 # notebook stuff
 jupyter
@@ -26,8 +24,8 @@ mypy
 pylint
 flake8
 flake8-docstrings
+flake8-mypy
 pyproject-flake8
-#ipdb?
 
 # neural parser
 ufal.udpipe
@@ -40,7 +38,9 @@ torchmetrics
 conllu
 
 # visualization
-bertviz
+matplotlib
+plotly
+seaborn
 
 # database
 lmdb
@@ -50,5 +50,8 @@ lz4
 psutil
 ply
 
-# scipy/sklearn install magic for M4
+# scipy/sklearn: uncomment if not on M1 Mac
+# scipy
+# sklearn
+# scipy/sklearn install magic for M1
 # https://github.com/scikit-learn/scikit-learn/issues/19137
