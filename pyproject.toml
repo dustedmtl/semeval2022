@@ -43,6 +43,10 @@ module = [
        "scipy.special",
        ".util",
        ".masker",
+       "seaborn",
+       "matplotlib",
+       "matplotlib.pyplot",
+       "sklearn.metrics",
        "tnparser.pipeline"
 ]
 ignore_missing_imports = true
