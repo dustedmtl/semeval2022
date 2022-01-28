@@ -116,13 +116,30 @@ def save_picture(pic: plt.figure, name: str, path: str = 'paper/figures',
     pic.savefig(filename, bbox_inches='tight')
 
 
-def save_table(df, name: str, path: str = 'paper/tables', ext=1):
+def add_hlines(latex: str) -> str:
+    """Add hlines to latex table."""
+    lines = []
+    lineno = 0
+    for line in latex.split('\n'):
+        lineno += 1
+        if lineno > 2 and 'tabular' in line:
+            lines.append('\hline')
+        lines.append(line)
+        if lineno in [1,2]:
+            lines.append('\hline')
+    return '\n'.join(lines)
+
+
+def save_table(df: pd.DataFrame, name: str, path: str = 'paper/tables', ext=1):
     """Save dataframe to disk, append date."""
     datestr = get_datestr()
     fmt = "%s/%s_%s_%d.tex"
     filename = fmt % (path, name, datestr, ext)
-    latex = df.style.to_latex()
+    ldf = df.copy()
+    latex = ldf.style.format(precision=3).format_index("\\textbf{{{}}}", escape="latex", axis=1).to_latex()
     latex = latex.replace('_', '\\_')
+    print(latex)
+    latex = add_hlines(latex)
     print(latex)
     print('Saving dataframe to', filename)
     with open(filename, 'w') as f:
