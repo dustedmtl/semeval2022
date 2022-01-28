@@ -108,9 +108,22 @@ def get_datestr():
 
 def save_picture(pic: plt.figure, name: str, path: str = 'paper/figures',
                  imgfmt: str = 'png', ext=1):
-    """Save dataframe to disk, append date."""
+    """Save picture to disk, append date."""
     datestr = get_datestr()
     fmt = "%s/%s_%s_%d.%s"
     filename = fmt % (path, name, datestr, ext, imgfmt)
-    print(filename)
+    print('Saving image to', filename)
     pic.savefig(filename, bbox_inches='tight')
+
+
+def save_table(df, name: str, path: str = 'paper/tables', ext=1):
+    """Save dataframe to disk, append date."""
+    datestr = get_datestr()
+    fmt = "%s/%s_%s_%d.tex"
+    filename = fmt % (path, name, datestr, ext)
+    latex = df.style.to_latex()
+    latex = latex.replace('_', '\\_')
+    print(latex)
+    print('Saving dataframe to', filename)
+    with open(filename, 'w') as f:
+        f.write(latex)
