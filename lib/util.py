@@ -8,7 +8,7 @@ from typing import List, Tuple, Dict, Optional
 import unicodedata
 from datetime import datetime
 import pandas as pd
-import matplotlib as plt
+import matplotlib.pyplot as plt
 
 
 def load_csv(path: str, delimiter: str = ',') -> Tuple[Optional[List], List]:
@@ -106,7 +106,8 @@ def get_datestr():
     return datestr
 
 
-def save_picture(pic: plt.figure, name: str, path: str='paper/figures', imgfmt='png', ext=1):
+def save_picture(pic: plt.figure, name: str, path: str = 'paper/figures',
+                 imgfmt: str = 'png', ext=1):
     """Save dataframe to disk, append date."""
     datestr = get_datestr()
     fmt = "%s/%s_%s_%d.%s"
