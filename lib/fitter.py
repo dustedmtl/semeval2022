@@ -403,3 +403,58 @@ def get_diff_df(diffs: pd.DataFrame, frames: List[pd.DataFrame]) -> pd.DataFrame
         # print(labels, sum_1, gotlabel)
         resdf.loc[idx, 'Label'] = gotlabel
     return resdf
+
+
+def majority_results(df: pd.DataFrame, gold: Optional[List[str]],
+                     labels1: List[str], scores1: List[float],
+                     labels2: List[str], scores2: List[float],
+                     labels3: List[str], scores3: List[float],
+                     lit_features: List[str] = None,
+                     idiom_features: List[str] = None,
+                     agreeonly: bool = False) -> pd.DataFrame:
+    """Majority voting classifier."""
+    newdf = df.copy()
+    if gold is not None:
+        newdf['Label'] = gold['Label']  # type: ignore
+    newdf['Pred1'] = labels1
+    newdf['Pred2'] = labels2
+    newdf['Pred3'] = labels3
+    newdf['Score1'] = scores1
+    newdf['Score2'] = scores2
+    newdf['Score3'] = scores3
+
+    idx = 0
+    for l1, l2, l3 in zip(labels1, labels2, labels3):
+        tot = int(l1) + int(l2) + int(l3)
+        # print(idx, l1, l2, l3, tot)
+        if tot > 1:
+            pred = '1'
+        else:
+            pred = '0'
+
+        newdf.loc[idx, 'Prediction'] = pred
+
+        if not agreeonly or (tot == 1 or tot == 2):
+            if idiom_features:
+                for f in idiom_features:
+                    if f.startswith('!'):
+                        f = f[1:]
+                        val = not newdf.loc[idx, f]
+                    else:
+                        val = newdf.loc[idx, f]
+                    # print(idx, tot, f, val)
+                    if val:
+                        newdf.loc[idx, 'Prediction'] = '0'
+                        newdf.loc[idx, 'Prediction'+f] = '0'
+
+            if lit_features:
+                for f in lit_features:
+                    val = newdf.loc[idx, f]
+                    # print(idx, tot, f, val)
+                    if val:
+                        newdf.loc[idx, 'Prediction'] = '1'
+                        newdf.loc[idx, 'Prediction'+f] = '1'
+
+        idx += 1
+        # break
+    return newdf
