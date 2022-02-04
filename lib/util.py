@@ -116,7 +116,7 @@ def save_picture(pic: plt.figure, name: str, path: str = 'paper/figures',
     pic.savefig(filename, bbox_inches='tight')
 
 
-def add_hlines(latex: str) -> str:
+def add_hlines(latex: str, hlines: List[int] = []) -> str:
     """Add hlines to latex table."""
     lines = []
     lineno = 0
@@ -127,12 +127,15 @@ def add_hlines(latex: str) -> str:
         lines.append(line)
         if lineno in [1,2]:
             lines.append('\hline')
+        elif lineno in hlines:
+            lines.append('\hline')
+
     return '\n'.join(lines)
 
 
 def save_table(df: pd.DataFrame,
                name: str, path: str = 'paper/tables',
-               ext=1, index: bool = True,
+               ext=1, index: bool = True, hlines: List[int] = [],
                colformat: Dict = {}):
     """Save dataframe to disk, append date."""
     datestr = get_datestr()
@@ -160,7 +163,7 @@ def save_table(df: pd.DataFrame,
             colfmt += 'r'
     latex = latex.to_latex(column_format=colfmt).replace('_', '\\_')
     # print(latex)
-    latex = add_hlines(latex)
+    latex = add_hlines(latex, hlines)
     # print(latex)
     print('Saving dataframe to', filename)
     with open(filename, 'w') as f:
