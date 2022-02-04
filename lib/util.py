@@ -130,17 +130,38 @@ def add_hlines(latex: str) -> str:
     return '\n'.join(lines)
 
 
-def save_table(df: pd.DataFrame, name: str, path: str = 'paper/tables', ext=1):
+def save_table(df: pd.DataFrame,
+               name: str, path: str = 'paper/tables',
+               ext=1, index: bool = True,
+               colformat: Dict = {}):
     """Save dataframe to disk, append date."""
     datestr = get_datestr()
     fmt = "%s/%s_%s_%d.tex"
     filename = fmt % (path, name, datestr, ext)
     ldf = df.copy()
-    latex = ldf.style.format(precision=3).format_index("\\textbf{{{}}}", escape="latex", axis=1).to_latex()
-    latex = latex.replace('_', '\\_')
-    print(latex)
+    for rmcol in ['C', 'C2', 'DataID']:
+        if rmcol in ldf.columns:
+            ldf = ldf.drop(rmcol, axis=1)
+    for col, t in zip(ldf.columns, ldf.dtypes):
+        if t == bool:
+            ldf = ldf.astype({col: str})
+    latex = ldf.style.format(precision=3).format_index("\\textbf{{{}}}", escape="latex", axis=1)
+    # Remove index column
+    if not index:
+        latex = latex.hide()
+    # Apply column formatting overrides
+    colfmt = ''
+    for col, dt in zip(ldf.columns, ldf.dtypes):
+        if col in colformat:
+            colfmt += colformat[col]
+        elif dt in [object, bool]:
+            colfmt += 'l'
+        else:
+            colfmt += 'r'
+    latex = latex.to_latex(column_format=colfmt).replace('_', '\\_')
+    # print(latex)
     latex = add_hlines(latex)
-    print(latex)
+    # print(latex)
     print('Saving dataframe to', filename)
     with open(filename, 'w') as f:
         f.write(latex)
