@@ -330,27 +330,32 @@ def multi_results(df: pd.DataFrame, gold: Optional[List[str]],
         for f in idiom_features:
             if f.startswith('!'):
                 f = f[1:]
-                id_mask = newdf[f] == False  # noqa: E712
+                if newdf.dtypes[f] == 'float64':
+                    mean = newdf[f].mean()
+                    id_mask = newdf[f] < mean
+                else:
+                    id_mask = newdf[f] == False  # noqa: E712
             else:
                 id_mask = newdf[f]
             if agreeonly:
                 newdf.loc[id_mask & ~agree, 'Prediction'] = '0'
-#                newdf.loc[id_mask & ~agree, 'Prediction'+f] = '0'
             else:
                 newdf.loc[id_mask, 'Prediction'] = '0'
-#                newdf.loc[id_mask, 'Prediction'+f] = '0'
 
     # print(np.sum(sub_not_trans))
     if lit_features:
         lit_mask = [False] * len(newdf)
         for f in lit_features:
-            lit_mask = newdf[f]
+            if newdf.dtypes[f] == 'float64':
+                mean = newdf[f].mean()
+                lit_mask = newdf[f] > mean
+            else:
+                lit_mask = newdf[f]
+
             if agreeonly:
                 newdf.loc[lit_mask & ~agree, 'Prediction'] = '1'
-#                newdf.loc[lit_mask & ~agree, 'Prediction'+f] = '1'
             else:
                 newdf.loc[lit_mask, 'Prediction'] = '1'
-#                newdf.loc[lit_mask, 'Prediction'+f] = '1'
 
     # replace $ sign which messes up dataframe showing
     xy = newdf[['Previous', 'Target', 'Next']].replace({'\$': '$\$$'}, regex=True)
