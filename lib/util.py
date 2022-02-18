@@ -62,11 +62,15 @@ def get_counts(dataframe, idcol: str = 'ID'):
         target = df_counts[(df_counts['Language'] == Language) & (df_counts['MWE'] == MWE)]
         if target.empty:
             # print(target)
-            df_counts = df_counts.append({'Language': Language, 'MWE': MWE, Label: count}, ignore_index=True)
+            # df_counts = df_counts.append({'Language': Language, 'MWE': MWE, Label: count}, ignore_index=True)
+            df_nu = pd.DataFrame([[Language, MWE, count]], columns=['Language', 'MWE', Label])
+            df_counts = pd.concat([df_counts, df_nu])
         else:
             # print(target)
             df_counts.loc[(df_counts['Language'] == Language) & (df_counts['MWE'] == MWE), Label] = count
+        # break
 
+    # print(df_counts)
     df_counts.fillna(0, inplace=True)
     df_counts['Total'] = df_counts['0 (Idiomatic)'] + df_counts['1 (Literal)']
     df_counts['Pct literal'] = df_counts['1 (Literal)'] / df_counts['Total']
