@@ -42,10 +42,10 @@ def load_csv_dataframes(path: str) -> Dict[str, pd.DataFrame]:
     return frames
 
 
-def get_counts(dataframe):
+def get_counts(dataframe, idcol: str = 'ID'):
     """Get counts from a dataframe."""
     df_group = dataframe.groupby(['Language', 'MWE', 'Label'],
-                                 as_index=False)['ID'].count().rename(columns={'ID': 'count'}).sort_values('count')
+                                 as_index=False)[idcol].count().rename(columns={idcol: 'count'}).sort_values('count')
     df_counts = pd.DataFrame(columns=['Language', 'MWE', '0 (Idiomatic)', '1 (Literal)'])
 
     for _index, row in df_group.iterrows():
