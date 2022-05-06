@@ -1,0 +1,24 @@
+diff -ur ./Dataset/Task2/Utils/run_glue_f1_macro.py ../stitch-patch/Dataset/Task2/Utils/run_glue_f1_macro.py
+--- ./Dataset/Task2/Utils/run_glue_f1_macro.py	2021-11-02 14:57:12.000000000 +0200
++++ ../stitch-patch/Dataset/Task2/Utils/run_glue_f1_macro.py	2022-05-06 14:57:48.000000000 +0300
+@@ -513,6 +513,8 @@
+             # Removing the `label` columns because it contains -1 and Trainer won't like that.
+             test_dataset.remove_columns_("label")
+             predictions = trainer.predict(test_dataset=test_dataset).predictions
++            maxvals = np.exp(predictions) / np.exp(predictions).sum(-1, keepdims=True)
++            maxvals = np.max(maxvals, axis=1)
+             predictions = np.squeeze(predictions) if is_regression else np.argmax(predictions, axis=1)
+ 
+             output_test_file = os.path.join(training_args.output_dir, f"test_results_{task}.txt")
+@@ -526,6 +528,11 @@
+                         else:
+                             item = label_list[item]
+                             writer.write(f"{index}\t{item}\n")
++                probs_file = '.'.join([output_test_file, 'probs'])
++                with open(probs_file, "w") as writer:
++                    writer.write("index\tprobs\n")
++                    for index, item in enumerate(maxvals):
++                        writer.write(f"{index}\t{item:3.3f}\n")
+ 
+ 
+ def _mp_fn(index):
